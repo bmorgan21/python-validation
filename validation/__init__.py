@@ -5,7 +5,7 @@ import inspect
 from datetime import datetime, date, time
 from dateutil.parser import parse
 
-import menum
+import enum
 
 from exception import *
 
@@ -273,7 +273,7 @@ class Enum(Unicode):
     ...
     ValidationException: Valid choices are: one, two, three. You provided [zero]
     >>> from openmile.lib import enum
-    >>> class E(menum.Enum):
+    >>> class E(enum.Enum):
     ...     A = '1'
     ...     B = '2'
     ...
@@ -284,14 +284,14 @@ class Enum(Unicode):
 
     def __init__(self, choices, max_length=None, truncate=False):
         self.choices = choices
-        if max_length is None and inspect.isclass(self.choices) and issubclass(self.choices, menum.Enum):
+        if max_length is None and inspect.isclass(self.choices) and issubclass(self.choices, enum.Enum):
             max_length = self.choices.max_length()
         Unicode.__init__(self, max_length=max_length, truncate=truncate)
 
     def _to_python(self, value):
         value = Unicode._to_python(self, value).strip()
 
-        if inspect.isclass(self.choices) and issubclass(self.choices, menum.Enum):
+        if inspect.isclass(self.choices) and issubclass(self.choices, enum.Enum):
             choices = self.choices.keys()
         elif isinstance(self.choices, list):
             choices = [x[0] for x in self.choices]
@@ -462,7 +462,7 @@ class Type(Integer):
     ...
     ValidationException: Valid choices are: 1,2,3. You provided [4]
     >>> from openmile.lib import enum
-    >>> class E(menum.Enum):
+    >>> class E(enum.Enum):
     ...     A = 1
     ...     B = 2
     ...
@@ -477,7 +477,7 @@ class Type(Integer):
     def _to_python(self, value):
         value = Integer._to_python(self, value)
 
-        if inspect.isclass(self.choices) and issubclass(self.choices, menum.Enum):
+        if inspect.isclass(self.choices) and issubclass(self.choices, enum.Enum):
             choices = self.choices.keys()
         else:
             if self.choices and isinstance(self.choices[0], tuple):
