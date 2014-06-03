@@ -294,12 +294,15 @@ class Enum(Unicode):
         if inspect.isclass(self.choices) and issubclass(self.choices, enum.Enum):
             choices = self.choices.keys()
         elif isinstance(self.choices, list):
-            choices = [x[0] for x in self.choices]
+            if isinstance(self.choices[0], (list, tuple)):
+                choices = [x[0] for x in self.choices]
+            else:
+                choices = self.choices
         else:
             choices = self.choices
 
         if value not in choices:
-            raise ValidationException('Valid choices are: %s. You provided [%s]'  % (', '.join([unicode(c) for c in choices]),value))
+            raise ValidationException('Valid choices are: %s. You provided [%s]' % (', '.join([unicode(c) for c in choices]), value))
         return value
 
 class Date(Validator):
