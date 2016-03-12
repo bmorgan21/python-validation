@@ -504,21 +504,32 @@ class PhoneNumber(Unicode):
     >>> p.to_python('223-456-789o') # testing mixed letters
     Traceback (most recent call last):
     ...
-    ValidationException: Please enter a 10 digit number, with area code, in the form ###-###-####
+    ValidationException: Please enter a 10 digit phone number with optional +country code in the format +#* ###-###-####
     >>> p.to_python('223  456  7890') # testing weird spacing
     u'2234567890'
-    >>> p.to_python('1-223-456-7890') # always throws away leading 1s
-    u'2234567890'
+    >>> p.to_python('+1-223-456-7890') # testing country code with +
+    u'+12234567890'
+    >>> p.to_python('1-223-456-7890') # testing country code missing +
+    u'+12234567890'
     >>> p.to_python('112-456-7890') # area code can't start with 1
     Traceback (most recent call last):
     ...
-    ValidationException: Please enter a 10 digit number, with area code, in the form ###-###-####
-    >>> p.to_python('2-223-456-7890') # throw away country code
-    u'2234567890'
+    ValidationException: Please enter a 10 digit phone number with optional +country code in the format +#* ###-###-####
+
+    >>> p.from_python('+12234567890')
+    '+1 (223) 456-7890'
+    >>> p.from_python('+442234567890')
+    '+44 (223) 456-7890'
+    >>> p.from_python('442234567890') # No plus, ignored
+    '442234567890'
+    >>> p.from_python('2345678901')
+    '(234) 567-8901'
+    >>> p.from_python('2345637') # Unrecognized length, ignored
+    '2345637'
     """
     _phoneRE = re.compile(r"""
                     # don't match beginning of string, number can start anywhere
-        1?          # can optionally start with us-country code
+        (\d*)       # can optionally start with country code digits
         \D*         # optional separator
         ([2-9]\d{2})     # area code is 3 digits starting with 2-9 (e.g. '800')
         \D*         # optional separator is any number of non-digits
@@ -538,7 +549,7 @@ class PhoneNumber(Unicode):
         $           # end of string
         """, re.VERBOSE)
 
-    def __init__(self, max_length=10, truncate=False):
+    def __init__(self, max_length=16, truncate=False):
         Unicode.__init__(self, max_length=max_length, truncate=truncate)
 
     def is_empty(self, value):
@@ -553,15 +564,35 @@ class PhoneNumber(Unicode):
         value = Unicode._to_python(self, value)
         match = self._phoneRE.search(value)
         if not match:
-            raise ValidationException('Please enter a 10 digit number, with area code, in the form ###-###-####')
-        else:
-            value = match.groups()[0] + match.groups()[1] + match.groups()[2]
-        return value
+            raise ValidationException('Please enter a 10 digit phone number with optional +country code in the format +#* ###-###-####')
+
+        python_number = ''.join(filter(None, match.groups()))
+        if match.groups(0) is not None:
+            # International number
+            python_number = '+' + python_number
+
+        return python_number
 
     def _from_python(self, value):
-        if isinstance(value, (str, unicode)) and len(value) == 10:
-            return '(%s) %s-%s' % (value[:3], value[3:6], value[6:])
-        return value
+        if not isinstance(value, (str, unicode)):
+            return value
+
+        international_prefix = None
+        if value[0] == '+':
+            if len(value) < 12:
+                return value  # Needs at least + and a country code
+            international_prefix = value[:-10]
+            value = value[-10:]
+        elif len(value) != 10:
+            # Too many or few digits
+            return value
+
+        phone_number =  '(%s) %s-%s' % (value[:3], value[3:6], value[6:])
+
+        if international_prefix:
+            phone_number = '%s %s' % (international_prefix, phone_number)
+
+        return phone_number
 
 class Email(Unicode):
     """
