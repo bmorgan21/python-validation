@@ -5,40 +5,45 @@ import inspect
 from datetime import datetime, date, time
 from dateutil.parser import parse
 
-import enum
+import enum21 as enum
 
 from exception import *
 
-def splitThousands( s, tSep=',', dSep='.'):
+
+def split_thousands(s, t_sep=',', d_sep='.'):
     '''Splits a general float on thousands. GIGO on general input'''
-    if s == None:
+    if s is None:
         return 0
-    if not isinstance( s, str ):
-        s = str( s )
 
-    cnt=0
-    numChars=dSep+'0123456789'
-    ls=len(s)
-    while cnt < ls and s[cnt] not in numChars: cnt += 1
+    if not isinstance(s, str):
+        s = str(s)
 
-    lhs = s[ 0:cnt ]
-    s = s[ cnt: ]
-    if dSep == '':
+    cnt = 0
+    num_chars = d_sep + '0123456789'
+    ls = len(s)
+    while cnt < ls and s[cnt] not in num_chars:
+        cnt += 1
+
+    lhs = s[0:cnt]
+    s = s[cnt:]
+    if d_sep == '':
         cnt = -1
     else:
-        cnt = s.rfind( dSep )
+        cnt = s.rfind(d_sep)
+
     if cnt > 0:
-        rhs = dSep + s[ cnt+1: ]
-        s = s[ :cnt ]
+        rhs = d_sep + s[cnt + 1:]
+        s = s[:cnt]
     else:
         rhs = ''
 
-    splt=''
+    splt = ''
     while s != '':
-        splt= s[ -3: ] + tSep + splt
-        s = s[ :-3 ]
+        splt = s[-3:] + t_sep + splt
+        s = s[:-3]
 
-    return lhs + splt[ :-1 ] + rhs
+    return lhs + splt[:-1] + rhs
+
 
 class Validator(object):
     def is_empty(self, value):
@@ -59,7 +64,8 @@ class Validator(object):
         return unicode(value)
 
     def _validate(self, value):
-        return value;
+        return value
+
 
 class Integer(Validator):
     """
@@ -96,7 +102,7 @@ class Integer(Validator):
 
         try:
             value = int(value)
-        except ValueError, e:
+        except ValueError:
             raise ValidationException('Please enter an integer - [%s]' % value)
 
         if self.min is not None and value is not None and value < self.min:
@@ -109,9 +115,10 @@ class Integer(Validator):
 
     def _from_python(self, value):
         if isinstance(value, (int, float, long, decimal.Decimal)):
-            return '%s' % splitThousands(int(value))
+            return '%s' % split_thousands(int(value))
         else:
             return value
+
 
 class Decimal(Validator):
     """
@@ -149,7 +156,7 @@ class Decimal(Validator):
                 value = float(value)
 
             value = decimal.Decimal(('%%0.%df' % self.scale) % value)
-        except ValueError, e:
+        except ValueError:
             raise ValidationException('Please enter a number - [%s]' % value)
 
         if self.min is not None and value < decimal.Decimal(str(self.min)):
@@ -164,9 +171,10 @@ class Decimal(Validator):
         if isinstance(value, (float, int, decimal.Decimal)):
             if isinstance(value, float):
                 value = '%f' % value
-            return splitThousands(unicode(decimal.Decimal(value).quantize(decimal.Decimal('.' + ('0' * (self.scale -1)) + '1'), rounding=self.rounding)))
+            return split_thousands(unicode(decimal.Decimal(value).quantize(decimal.Decimal('.' + ('0' * (self.scale - 1)) + '1'), rounding=self.rounding)))
         else:
             return value
+
 
 class Currency(Decimal):
     """
@@ -202,7 +210,7 @@ class Currency(Decimal):
     ...
     ValidationException: Please enter a number - [c]
     """
-    _currency = re.compile(r'^(?P<sign1>[+-])?\$?(?P<sign2>[+-])?(?P<digits>\d*(?:,\d\d\d)*)(?P<cents>\.\d{1,2})?$',re.I)
+    _currency = re.compile(r'^(?P<sign1>[+-])?\$?(?P<sign2>[+-])?(?P<digits>\d*(?:,\d\d\d)*)(?P<cents>\.\d{1,2})?$', re.I)
 
     def is_empty(self, value):
         if value is None:
@@ -229,6 +237,7 @@ class Currency(Decimal):
             return '$%s' % Decimal._from_python(self, value)
         else:
             return value
+
 
 class Unicode(Validator):
     """
@@ -262,6 +271,7 @@ class Unicode(Validator):
         if self.max_length and not self.truncate and len(value) > self.max_length:
             raise MaxLengthException('Please enter a string no more than %d characters' % self.max_length)
         return value
+
 
 class Enum(Unicode):
     """
@@ -305,6 +315,7 @@ class Enum(Unicode):
             raise ValidationException('Valid choices are: %s. You provided [%s]' % (', '.join([unicode(c) for c in choices]), value))
         return value
 
+
 class Date(Validator):
     """ There are about a billion tests that could be done here.
     >>> d = Date()
@@ -326,8 +337,12 @@ class Date(Validator):
     ValidationException: month must be in 1..12
     """
     def _to_python(self, value):
-        if isinstance(value, datetime): return value.date()
-        if isinstance(value, date): return value
+        if isinstance(value, datetime):
+            return value.date()
+
+        if isinstance(value, date):
+            return value
+
         value = str(value)
 
         try:
@@ -342,6 +357,7 @@ class Date(Validator):
         if isinstance(value, (date, datetime)):
             return value.strftime('%m/%d/%Y')
         return value
+
 
 class Time(Validator):
     """
@@ -367,8 +383,11 @@ class Time(Validator):
     """
 
     time_re = re.compile(r"^(\d{1,2}):?(\d\d)(:?\d\d)?(\s*AM|PM)?$", re.I)
+
     def _to_python(self, value):
-        if isinstance(value, time): return value
+        if isinstance(value, time):
+            return value
+
         value = str(value)
 
         m = self.time_re.match(value)
@@ -376,7 +395,7 @@ class Time(Validator):
             raise ValidationException('Invalid time format, please use XX:XX')
         value = '%s:%s' % (m.groups()[0], m.groups()[1])
         if m.groups()[2] is not None:
-            value = '%s:%s' % (value, m.groups()[2].replace(':',''))
+            value = '%s:%s' % (value, m.groups()[2].replace(':', ''))
         if m.groups()[3] is not None:
             value = '%s %s' % (value, m.groups()[3].strip())
 
@@ -390,6 +409,7 @@ class Time(Validator):
             return value.strftime('%H:%M')
         return value
 
+
 class DateTime(Validator):
     """
     >>> d = DateTime()
@@ -402,7 +422,9 @@ class DateTime(Validator):
     """
 
     def _to_python(self, value):
-        if isinstance(value, datetime): return value
+        if isinstance(value, datetime):
+            return value
+
         value = str(value)
 
         try:
@@ -414,6 +436,7 @@ class DateTime(Validator):
         if isinstance(value, (date, datetime)):
             return value.strftime('%Y-%m-%d %H:%M:%S')
         return value
+
 
 class Boolean(Validator):
     """
@@ -454,6 +477,7 @@ class Boolean(Validator):
     def _from_python(self, value):
         return str(value)
 
+
 class Type(Integer):
     """Use for types where applicable (alert type, event type etc.) Likely indexed so use integer type.
 
@@ -489,8 +513,9 @@ class Type(Integer):
                 choices = self.choices
 
         if value not in choices:
-            raise ValidationException('Valid choices are: %s. You provided [%s]'  % (','.join(map(lambda x:str(x), choices)),value))
+            raise ValidationException('Valid choices are: %s. You provided [%s]' % (','.join(map(lambda x: str(x), choices)), value))
         return value
+
 
 class PhoneNumber(Unicode):
     """
@@ -563,6 +588,7 @@ class PhoneNumber(Unicode):
             return '(%s) %s-%s' % (value[:3], value[3:6], value[6:])
         return value
 
+
 class Email(Unicode):
     """
 
@@ -594,12 +620,12 @@ class Email(Unicode):
 
     # http://en.wikipedia.org/wiki/Email_address#Local_part
     # special characters are rarely used and discouraged
-    special_characters = [32, 34, 40, 41, 44, 58, 59, 60, 62, 64, (91, 93)] # "(),:;<>@[\]
-    local_part_constraints = [(65, 90), # a-z
-                              (97, 122), # A-Z
-                              (48, 57), # 0-9
-                              33, (35, 39), 42, 43, 45, 47, 61, 63, (94, 96), (123, 126), # !#$%&'*+-/=?^_`{|}~
-                              46, # .
+    special_characters = [32, 34, 40, 41, 44, 58, 59, 60, 62, 64, (91, 93)]  # "(),:;<>@[\]
+    local_part_constraints = [(65, 90),  # a-z
+                              (97, 122),  # A-Z
+                              (48, 57),  # 0-9
+                              33, (35, 39), 42, 43, 45, 47, 61, 63, (94, 96), (123, 126),  # !#$%&'*+-/=?^_`{|}~
+                              46,  # .
                               ]
     domainRE = re.compile(r"""
         ^(?:[a-z0-9][a-z0-9\-]{0,62}\.)+ # (sub)domain - alpha followed by 62max chars (63 total)
@@ -614,7 +640,7 @@ class Email(Unicode):
             if isinstance(v, int):
                 self.char_index[v] = True
             elif isinstance(v, tuple):
-                for v1 in range(v[0], v[1]+1):
+                for v1 in range(v[0], v[1] + 1):
                     self.char_index[v1] = True
 
     def _check_username(self, value):
@@ -632,7 +658,7 @@ class Email(Unicode):
         value = Unicode._to_python(self, value).strip()
         splitted = value.split('@', 1)
         try:
-            username, domain=splitted
+            username, domain = splitted
         except ValueError:
             raise ValidationException('Please enter an email address in the form user@domain.com')
 
@@ -643,6 +669,7 @@ class Email(Unicode):
             raise ValidationException('The domain portion of the email address is invalid (the portion after the @: %s)' % domain)
 
         return value
+
 
 # Represents the value another table/objects PrimaryID. Similar to ForeignKey but does not enforce constraint.
 class ObjectID(Integer):
@@ -669,6 +696,7 @@ class ObjectID(Integer):
         else:
             return value
 
+
 class ZipCode5(Unicode):
     """
 
@@ -690,7 +718,7 @@ class ZipCode5(Unicode):
     ValidationException: Please enter ZipCode as a 5 digit number - [o2115]
     """
 
-    _zipcode5 = re.compile(r'^(\d\d\d\d\d)',re.I)
+    _zipcode5 = re.compile(r'^(\d\d\d\d\d)', re.I)
 
     def __init__(self, max_length=5, truncate=False):
         Unicode.__init__(self, max_length=max_length, truncate=truncate)
@@ -700,8 +728,9 @@ class ZipCode5(Unicode):
 
         match = self._zipcode5.search(value)
         if not match:
-            raise ValidationException('Please enter zip code as a 5 digit number - [%s]'% value)
+            raise ValidationException('Please enter zip code as a 5 digit number - [%s]' % value)
         return match.groups()[0]
+
 
 class ZipCodeExt(Unicode):
     """
@@ -723,7 +752,7 @@ class ZipCodeExt(Unicode):
     ValidationException: Please enter ZipCodeExt as a 4 digit number - [o123]
     """
 
-    _zipcodeext = re.compile(r'^(\d\d\d\d)',re.I)
+    _zipcodeext = re.compile(r'^(\d\d\d\d)', re.I)
 
     def __init__(self, max_length=4, truncate=False):
         Unicode.__init__(self, max_length=max_length, truncate=truncate)
@@ -733,8 +762,9 @@ class ZipCodeExt(Unicode):
 
         match = self._zipcodeext.search(value)
         if not match:
-            raise ValidationException('Please enter ZipCodeExt as a 4 digit number - [%s]'% value)
+            raise ValidationException('Please enter ZipCodeExt as a 4 digit number - [%s]' % value)
         return match.groups()[0]
+
 
 class PhoneExt(Unicode):
     """
@@ -754,7 +784,7 @@ class PhoneExt(Unicode):
     u'123456'
     """
 
-    _phoneext = re.compile(r'^(\d{1,6})',re.I)
+    _phoneext = re.compile(r'^(\d{1,6})', re.I)
 
     def __init__(self, max_length=6, truncate=False):
         Unicode.__init__(self, max_length=max_length, truncate=truncate)
@@ -764,8 +794,9 @@ class PhoneExt(Unicode):
 
         match = self._phoneext.search(value)
         if not match:
-            raise ValidationException('Please enter extension as a 1-6 digit number - [%s]'% value)
+            raise ValidationException('Please enter extension as a 1-6 digit number - [%s]' % value)
         return match.groups()[0]
+
 
 class Percentage(Decimal):
     """

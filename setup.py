@@ -1,13 +1,15 @@
 from distutils.core import setup
 
 setup(
-    name='validation',
-    version='0.1.0',
+    name='validation21',
+    packages=['validation21'],
+    version='0.2.1',
+    description='Validation library for Python.',
     author='Brian S Morgan',
     author_email='brian.s.morgan@gmail.com',
-    packages=['validation'],
     url='https://github.com/bmorgan21/python-validation',
-    description='Validation library for Python.',
     install_requires=[
+        'enum21>=0.2.0',
+        'python-dateutil'
     ],
 )
