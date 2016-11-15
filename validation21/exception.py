@@ -19,9 +19,12 @@ class ValidationException(ValueError):
         ValueError.__init__(self, *args, **kwargs)
 
     def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    def __unicode__(self):
         if self.error_dict is not None:
-            return ', '.join(['%s.%s: %s' % (y.table, x, y) for x, y in self.error_dict.items()])
-        return ValueError.__str__(self)
+            return u', '.join([u'{}.{}: {}'.format(y.table, x, y) for x, y in self.error_dict.items()])
+        return ValueError.__unicode__(self)
 
     @classmethod
     def create_warning(cls, warning_level, name, value, *args, **kwargs):
