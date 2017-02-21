@@ -19,11 +19,8 @@ class ValidationException(ValueError):
         ValueError.__init__(self, *args, **kwargs)
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
-
-    def __unicode__(self):
         if self.error_dict is not None:
-            return u', '.join([u'{}.{}: {}'.format(y.table, x, y) for x, y in self.error_dict.items()])
+            return (u', '.join([u'{}.{}: {}'.format(y.table, x, y) for x, y in self.error_dict.items()])).encode('utf-8')
         return ValueError.__unicode__(self)
 
     @classmethod

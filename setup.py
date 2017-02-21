@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='validation21',
     packages=['validation21'],
-    version='0.2.5',
+    version='0.2.6',
     description='Validation library for Python.',
     author='Brian S Morgan',
     author_email='brian.s.morgan@gmail.com',
