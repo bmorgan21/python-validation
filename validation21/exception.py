@@ -21,7 +21,7 @@ class ValidationException(ValueError):
     def __str__(self):
         if self.error_dict is not None:
             return (u', '.join([u'{}.{}: {}'.format(y.table, x, y) for x, y in self.error_dict.items()])).encode('utf-8')
-        return ValueError.__unicode__(self)
+        return ValueError.__str__(self)
 
     @classmethod
     def create_warning(cls, warning_level, name, value, *args, **kwargs):
